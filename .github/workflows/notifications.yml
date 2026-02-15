@@ -6,9 +6,19 @@ on:
   pull_request_review:
     types: [submitted]
 
+# Segurança: só roda para PRs de colaboradores autorizados
+# Para forks externos, requer aprovação manual
+
 jobs:
   notify:
     runs-on: ubuntu-latest
+    
+    # Proteção: não expor secrets em forks não autorizados
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository ||
+      github.event.pull_request.author_association == 'COLLABORATOR' ||
+      github.event.pull_request.author_association == 'MEMBER' ||
+      github.event.pull_request.author_association == 'OWNER'
     
     steps:
       - name: Extrair informações
