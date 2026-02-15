@@ -1,0 +1,20 @@
+{
+  "name": "desenvolvimento-web-2026-exercicios",
+  "version": "1.0.0",
+  "description": "Sistema de exercícios automatizados com GitHub Actions",
+  "scripts": {
+    "validate:html": "html-validate",
+    "validate:css": "stylelint '**/*.css'",
+    "validate:all": "npm run validate:html && npm run validate:css",
+    "test": "jest"
+  },
+  "keywords": ["html", "css", "javascript", "education"],
+  "author": "Petros Barreto",
+  "license": "MIT",
+  "devDependencies": {
+    "html-validate": "^8.0.0",
+    "stylelint": "^15.10.0",
+    "stylelint-config-standard": "^34.0.0",
+    "jest": "^29.6.0"
+  }
+}

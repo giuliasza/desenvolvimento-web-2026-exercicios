@@ -1,0 +1,215 @@
+name: Validar Exercício - Aula 01
+
+on:
+  pull_request:
+    paths:
+      - 'exercicios/aula01/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'exercicios/aula01/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Validar HTML (W3C)
+        id: validate-html
+        run: |
+          echo "📝 Validando HTML..."
+          npx html-validate exercicios/aula01/index.html || echo "html_errors=true" >> $GITHUB_OUTPUT
+      
+      - name: Verificar estrutura HTML
+        id: check-structure
+        run: |
+          echo "🔍 Verificando estrutura HTML..."
+          FILE="exercicios/aula01/index.html"
+          SCORE=0
+          ERRORS=""
+          
+          # DOCTYPE
+          if grep -q "<!DOCTYPE html>" "$FILE"; then
+            echo "✅ DOCTYPE correto"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ DOCTYPE ausente ou incorreto"
+            ERRORS="${ERRORS}\n- Falta DOCTYPE html"
+          fi
+          
+          # Lang
+          if grep -q 'lang="pt-BR"' "$FILE"; then
+            echo "✅ Lang pt-BR presente"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Atributo lang ausente"
+            ERRORS="${ERRORS}\n- Falta lang=\"pt-BR\" na tag <html>"
+          fi
+          
+          # Meta charset
+          if grep -q '<meta charset="UTF-8">' "$FILE"; then
+            echo "✅ Meta charset presente"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Meta charset ausente"
+            ERRORS="${ERRORS}\n- Falta <meta charset=\"UTF-8\">"
+          fi
+          
+          # Meta viewport
+          if grep -q 'name="viewport"' "$FILE"; then
+            echo "✅ Meta viewport presente"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Meta viewport ausente"
+            ERRORS="${ERRORS}\n- Falta meta viewport para responsividade"
+          fi
+          
+          # Title
+          if grep -q '<title>' "$FILE" && ! grep -q '<title>Seu Nome' "$FILE"; then
+            echo "✅ Title personalizado"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Title não personalizado"
+            ERRORS="${ERRORS}\n- Personalize o <title>"
+          fi
+          
+          # Tags semânticas
+          for tag in header main section footer; do
+            if grep -q "<$tag>" "$FILE"; then
+              echo "✅ Tag <$tag> presente"
+              SCORE=$((SCORE + 5))
+            else
+              echo "❌ Tag <$tag> ausente"
+              ERRORS="${ERRORS}\n- Falta tag <$tag>"
+            fi
+          done
+          
+          # Headings hierarchy
+          if grep -q '<h1>' "$FILE" && grep -q '<h2>' "$FILE"; then
+            echo "✅ Hierarquia de headings presente"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Falta hierarquia de headings"
+            ERRORS="${ERRORS}\n- Use h1, h2, h3 corretamente"
+          fi
+          
+          # Imagem com alt
+          if grep -q 'alt=' "$FILE" && ! grep -q 'alt="\[Seu Nome\]"' "$FILE"; then
+            echo "✅ Imagem com alt personalizado"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Alt da imagem não personalizado"
+            ERRORS="${ERRORS}\n- Personalize o atributo alt da imagem"
+          fi
+          
+          # Listas
+          if grep -q '<ul>' "$FILE" && grep -q '<ol>' "$FILE"; then
+            echo "✅ Listas (ul e ol) presentes"
+            SCORE=$((SCORE + 10))
+          else
+            echo "❌ Faltam listas"
+            ERRORS="${ERRORS}\n- Adicione listas <ul> e <ol>"
+          fi
+          
+          # Tabela
+          if grep -q '<table>' "$FILE" && grep -q '<thead>' "$FILE" && grep -q '<tbody>' "$FILE"; then
+            echo "✅ Tabela completa"
+            SCORE=$((SCORE + 10))
+          else
+            echo "❌ Tabela incompleta"
+            ERRORS="${ERRORS}\n- Adicione tabela com thead e tbody"
+          fi
+          
+          # Links
+          if grep -q '<a href=' "$FILE"; then
+            echo "✅ Links presentes"
+            SCORE=$((SCORE + 5))
+          else
+            echo "❌ Faltam links"
+            ERRORS="${ERRORS}\n- Adicione links de contato"
+          fi
+          
+          # Conteúdo personalizado
+          if ! grep -q 'Seu Nome Completo' "$FILE" && ! grep -q 'seuemail@example.com' "$FILE"; then
+            echo "✅ Conteúdo personalizado"
+            SCORE=$((SCORE + 20))
+          else
+            echo "❌ Conteúdo não personalizado"
+            ERRORS="${ERRORS}\n- Substitua os placeholders pelo seu conteúdo"
+          fi
+          
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "errors<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$ERRORS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "📊 SCORE: $SCORE/100"
+      
+      - name: Comentar no PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const score = '${{ steps.check-structure.outputs.score }}';
+            const errors = `${{ steps.check-structure.outputs.errors }}`;
+            
+            let emoji = '⭐';
+            let level = 'Regular';
+            if (score >= 90) {
+              emoji = '⭐⭐⭐';
+              level = 'Excelente';
+            } else if (score >= 70) {
+              emoji = '⭐⭐';
+              level = 'Bom';
+            } else if (score >= 50) {
+              emoji = '⭐';
+              level = 'Regular';
+            } else {
+              emoji = '❌';
+              level = 'Precisa melhorar';
+            }
+            
+            const body = `## 🤖 Validação Automática - Aula 01
+            
+            ### 📊 Resultado: ${score}/100 ${emoji}
+            **Nível:** ${level}
+            
+            ${errors ? '### ❌ Problemas Encontrados:\n' + errors : '### ✅ Todos os requisitos atendidos!'}
+            
+            ${score >= 70 ? '🎉 Ótimo trabalho! Seu exercício está aprovado.' : '📝 Corrija os problemas acima e faça um novo push. O bot validará automaticamente.'}
+            
+            ---
+            
+            ### 💡 Dicas:
+            - Valide seu HTML em: https://validator.w3.org/#validate_by_input
+            - Use o DevTools (F12) para inspecionar seu código
+            - Consulte os slides da Aula 1 se tiver dúvidas
+            
+            ### 📚 Recursos:
+            - [MDN - HTML Básico](https://developer.mozilla.org/pt-BR/docs/Learn/Getting_started_with_the_web/HTML_basics)
+            - [W3Schools - HTML](https://www.w3schools.com/html/)
+            
+            _Validação executada em: ${new Date().toLocaleString('pt-BR')}_`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+      
+      - name: Definir status do check
+        if: steps.check-structure.outputs.score < 70
+        run: |
+          echo "❌ Score abaixo de 70. PR precisa de melhorias."
+          exit 1
