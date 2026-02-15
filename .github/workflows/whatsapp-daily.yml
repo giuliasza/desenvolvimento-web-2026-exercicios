@@ -1,0 +1,57 @@
+name: Resumo Diário WhatsApp
+
+on:
+  schedule:
+    - cron: '0 22 * * *'  # 22:00 UTC = 19:00 Recife
+  workflow_dispatch:
+
+jobs:
+  daily-summary:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Coletar PRs do dia
+        id: collect
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+            
+            const todayPRs = prs.filter(pr => {
+              const prDate = new Date(pr.created_at);
+              return prDate >= today;
+            });
+            
+            const opened = todayPRs.filter(pr => pr.state === 'open').length;
+            const merged = todayPRs.filter(pr => pr.merged_at && new Date(pr.merged_at) >= today).length;
+            const closed = todayPRs.filter(pr => pr.state === 'closed' && !pr.merged_at).length;
+            
+            return { opened, merged, closed, total: todayPRs.length };
+      
+      - name: Enviar resumo WhatsApp
+        if: steps.collect.outputs.result != '{"opened":0,"merged":0,"closed":0,"total":0}'
+        run: |
+          SUMMARY='📊 *Resumo Diário - Desenvolvimento Web*
+          
+          *Data:* '$(date +%d/%m/%Y)'
+          
+          📝 *PRs abertos hoje:* ${{ fromJSON(steps.collect.outputs.result).opened }}
+          ✅ *PRs aprovados:* ${{ fromJSON(steps.collect.outputs.result).merged }}
+          ❌ *PRs fechados:* ${{ fromJSON(steps.collect.outputs.result).closed }}
+          
+          🔗 https://github.com/petrosbarreto/desenvolvimento-web-2026-exercicios/pulls
+          
+          _Sistema automatizado - P3 🤖_'
+          
+          echo "$SUMMARY"
