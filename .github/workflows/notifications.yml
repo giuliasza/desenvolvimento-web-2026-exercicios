@@ -1,0 +1,129 @@
+name: Notificações de PRs
+
+on:
+  pull_request:
+    types: [opened, closed, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Extrair informações
+        id: extract
+        run: |
+          ALUNO="${{ github.event.pull_request.user.login }}"
+          TITULO="${{ github.event.pull_request.title }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          ACTION="${{ github.event.action }}"
+          
+          echo "aluno=$ALUNO" >> $GITHUB_OUTPUT
+          echo "titulo=$TITULO" >> $GITHUB_OUTPUT
+          echo "pr_num=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "action=$ACTION" >> $GITHUB_OUTPUT
+      
+      - name: Notificar Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "⚠️  Discord webhook não configurado"
+            exit 0
+          fi
+          
+          ALUNO="${{ steps.extract.outputs.aluno }}"
+          TITULO="${{ steps.extract.outputs.titulo }}"
+          PR_URL="${{ steps.extract.outputs.pr_url }}"
+          ACTION="${{ steps.extract.outputs.action }}"
+          
+          case "$ACTION" in
+            opened)
+              COLOR="3447003"
+              EMOJI="📝"
+              MSG="Nova submissão"
+              ;;
+            closed)
+              if [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+                COLOR="2067276"
+                EMOJI="✅"
+                MSG="PR aprovado e merged"
+              else
+                COLOR="15158332"
+                EMOJI="❌"
+                MSG="PR fechado"
+              fi
+              ;;
+            reopened)
+              COLOR="15105570"
+              EMOJI="🔄"
+              MSG="PR reaberto"
+              ;;
+          esac
+          
+          PAYLOAD=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "$EMOJI $MSG",
+              "description": "**Aluno:** $ALUNO\n**Exercício:** $TITULO",
+              "url": "$PR_URL",
+              "color": $COLOR,
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
+              "footer": {
+                "text": "Desenvolvimento Web 2026.1"
+              }
+            }]
+          }
+          EOF
+          )
+          
+          curl -H "Content-Type: application/json" \
+               -d "$PAYLOAD" \
+               "$DISCORD_WEBHOOK"
+      
+      - name: Notificar WhatsApp (via OpenClaw)
+        if: always()
+        env:
+          OPENCLAW_URL: ${{ secrets.OPENCLAW_URL }}
+          OPENCLAW_TOKEN: ${{ secrets.OPENCLAW_TOKEN }}
+          PROFESSOR_PHONE: ${{ secrets.PROFESSOR_PHONE }}
+        run: |
+          if [ -z "$OPENCLAW_URL" ] || [ -z "$OPENCLAW_TOKEN" ]; then
+            echo "⚠️  OpenClaw não configurado"
+            exit 0
+          fi
+          
+          ALUNO="${{ steps.extract.outputs.aluno }}"
+          TITULO="${{ steps.extract.outputs.titulo }}"
+          PR_URL="${{ steps.extract.outputs.pr_url }}"
+          ACTION="${{ steps.extract.outputs.action }}"
+          
+          case "$ACTION" in
+            opened)
+              EMOJI="📝"
+              MSG="Nova submissão"
+              ;;
+            closed)
+              if [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+                EMOJI="✅"
+                MSG="PR aprovado"
+              else
+                EMOJI="❌"
+                MSG="PR fechado"
+              fi
+              ;;
+          esac
+          
+          TEXT="$EMOJI *$MSG*\n\n*Aluno:* $ALUNO\n*Exercício:* $TITULO\n\n$PR_URL"
+          
+          curl -X POST "$OPENCLAW_URL/api/message" \
+               -H "Authorization: Bearer $OPENCLAW_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d "{
+                 \"to\": \"$PROFESSOR_PHONE\",
+                 \"message\": \"$TEXT\"
+               }"

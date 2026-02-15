@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 Leaderboard - Desenvolvimento Web 2026.1</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+    
+    header h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .stat-card .number {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #667eea;
+      margin: 10px 0;
+    }
+    
+    .stat-card .label {
+      color: #666;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      margin-bottom: 40px;
+      padding: 20px;
+    }
+    
+    .podium-place {
+      background: white;
+      border-radius: 15px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .podium-place:hover {
+      transform: scale(1.05);
+    }
+    
+    .podium-place.first {
+      order: 2;
+      padding-bottom: 50px;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    }
+    
+    .podium-place.second {
+      order: 1;
+      padding-bottom: 30px;
+      background: linear-gradient(135deg, #c3cfe2 0%, #c3cfe2 100%);
+    }
+    
+    .podium-place.third {
+      order: 3;
+      padding-bottom: 30px;
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    }
+    
+    .podium-place .medal {
+      font-size: 4rem;
+      margin-bottom: 10px;
+    }
+    
+    .podium-place .name {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .podium-place .score {
+      font-size: 2rem;
+      color: #666;
+    }
+    
+    .leaderboard {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .leaderboard h2 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 2rem;
+    }
+    
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s ease;
+    }
+    
+    .leaderboard-item:hover {
+      background: #f8f9fa;
+    }
+    
+    .leaderboard-item:last-child {
+      border-bottom: none;
+    }
+    
+    .rank {
+      font-size: 1.5rem;
+      font-weight: bold;
+      min-width: 50px;
+      color: #667eea;
+    }
+    
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin: 0 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .info {
+      flex: 1;
+    }
+    
+    .name-student {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+    }
+    
+    .exercises {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    
+    .score-display {
+      text-align: right;
+      min-width: 100px;
+    }
+    
+    .avg-score {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .total-score {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: white;
+      font-size: 1.5rem;
+    }
+    
+    .refresh-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      display: block;
+      margin: 30px auto;
+    }
+    
+    .refresh-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 20px rgba(0,0,0,0.3);
+    }
+    
+    .last-update {
+      text-align: center;
+      color: white;
+      margin-top: 20px;
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2rem;
+      }
+      
+      .podium {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .podium-place {
+        width: 100%;
+        max-width: 300px;
+      }
+      
+      .podium-place.first,
+      .podium-place.second,
+      .podium-place.third {
+        order: initial;
+        padding-bottom: 30px;
+      }
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animated {
+      animation: fadeIn 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="animated">
+      <h1>🏆 Leaderboard</h1>
+      <p>Desenvolvimento Web 2026.1 - UNINASSAU</p>
+    </header>
+    
+    <div class="stats animated" id="stats">
+      <div class="stat-card">
+        <div class="label">Total de Alunos</div>
+        <div class="number" id="total-alunos">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Exercícios Submetidos</div>
+        <div class="number" id="total-exercicios">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Média da Turma</div>
+        <div class="number" id="media-turma">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Taxa de Aprovação</div>
+        <div class="number" id="taxa-aprovacao">-</div>
+      </div>
+    </div>
+    
+    <div class="podium animated" id="podium">
+      <div class="loading">Carregando dados...</div>
+    </div>
+    
+    <div class="leaderboard animated">
+      <h2>Ranking Completo</h2>
+      <div id="leaderboard-list">
+        <div class="loading">Carregando...</div>
+      </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="loadData()">🔄 Atualizar Dados</button>
+    
+    <div class="last-update" id="last-update">
+      Última atualização: -
+    </div>
+  </div>
+  
+  <script>
+    async function loadData() {
+      try {
+        // Carregar dados do ranking
+        const response = await fetch('ranking-data.json');
+        const data = await response.json();
+        
+        // Atualizar estatísticas
+        updateStats(data);
+        
+        // Atualizar pódio
+        updatePodium(data.slice(0, 3));
+        
+        // Atualizar lista completa
+        updateLeaderboard(data);
+        
+        // Atualizar timestamp
+        document.getElementById('last-update').textContent = 
+          `Última atualização: ${new Date().toLocaleString('pt-BR')}`;
+        
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        
+        // Dados de exemplo (desenvolvimento)
+        const sampleData = [
+          { name: 'Aguardando submissões', avgScore: '-', exercisesCompleted: 0, totalScore: 0 }
+        ];
+        
+        updatePodium(sampleData);
+        updateLeaderboard(sampleData);
+      }
+    }
+    
+    function updateStats(data) {
+      const totalAlunos = data.length;
+      const totalExercicios = data.reduce((sum, s) => sum + s.exercisesCompleted, 0);
+      const mediaTurma = totalAlunos > 0 
+        ? (data.reduce((sum, s) => sum + parseFloat(s.avgScore || 0), 0) / totalAlunos).toFixed(1)
+        : '-';
+      const aprovados = data.filter(s => parseFloat(s.avgScore || 0) >= 70).length;
+      const taxaAprovacao = totalAlunos > 0 
+        ? ((aprovados / totalAlunos) * 100).toFixed(0) + '%'
+        : '-';
+      
+      document.getElementById('total-alunos').textContent = totalAlunos;
+      document.getElementById('total-exercicios').textContent = totalExercicios;
+      document.getElementById('media-turma').textContent = mediaTurma;
+      document.getElementById('taxa-aprovacao').textContent = taxaAprovacao;
+    }
+    
+    function updatePodium(top3) {
+      const podium = document.getElementById('podium');
+      
+      if (top3.length === 0) {
+        podium.innerHTML = '<div class="loading">Nenhuma submissão ainda</div>';
+        return;
+      }
+      
+      const medals = ['🥇', '🥈', '🥉'];
+      const classes = ['first', 'second', 'third'];
+      
+      podium.innerHTML = top3.map((student, i) => `
+        <div class="podium-place ${classes[i]}">
+          <div class="medal">${medals[i]}</div>
+          <div class="name">${student.name}</div>
+          <div class="score">${student.avgScore}</div>
+          <div class="exercises">${student.exercisesCompleted} exercícios</div>
+        </div>
+      `).join('');
+    }
+    
+    function updateLeaderboard(data) {
+      const list = document.getElementById('leaderboard-list');
+      
+      if (data.length === 0) {
+        list.innerHTML = '<div class="loading">Nenhuma submissão ainda</div>';
+        return;
+      }
+      
+      list.innerHTML = data.map((student, i) => {
+        const initial = student.name.charAt(0).toUpperCase();
+        const rank = i + 1;
+        const emoji = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `${rank}º`;
+        
+        return `
+          <div class="leaderboard-item">
+            <div class="rank">${emoji}</div>
+            <div class="avatar">${initial}</div>
+            <div class="info">
+              <div class="name-student">${student.name}</div>
+              <div class="exercises">${student.exercisesCompleted} exercícios completados</div>
+            </div>
+            <div class="score-display">
+              <div class="avg-score">${student.avgScore}</div>
+              <div class="total-score">${student.totalScore} pts</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Carregar dados ao iniciar
+    loadData();
+    
+    // Auto-refresh a cada 5 minutos
+    setInterval(loadData, 5 * 60 * 1000);
+  </script>
+</body>
+</html>

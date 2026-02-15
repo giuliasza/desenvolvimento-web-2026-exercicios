@@ -296,3 +296,38 @@ Repositório educacional - UNINASSAU 2026.1
 **Bons estudos! 🚀**
 
 _Dúvidas? Abra uma Issue ou mande email._
+
+---
+
+## 🎮 Recursos Avançados
+
+### 🤖 Sistema de Validação Automática
+- Valida HTML, CSS e JavaScript
+- Feedback detalhado em cada PR
+- Score 0-100 automático
+- 15+ verificações por exercício
+
+### 🔍 Detector de Plágio
+- Compara códigos entre alunos
+- Detecta templates não implementados
+- Alerta automático em PRs suspeitos
+- Label ⚠️ para revisão manual
+
+### 🏆 Leaderboard em Tempo Real
+**[🎯 Ver Leaderboard Ao Vivo →](leaderboard.html)**
+- Atualiza a cada 5 minutos
+- Top 3 em pódio visual
+- Ranking completo com avatares
+- Estatísticas da turma
+
+### 🔔 Notificações Automáticas
+- **Discord:** Notifica quando PR é aberto/merged
+- **WhatsApp:** Via OpenClaw (opcional)
+- Professor recebe alertas em tempo real
+
+### 📊 Badges Dinâmicos
+![Alunos](https://raw.githubusercontent.com/petrosbarreto/desenvolvimento-web-2026-exercicios/main/.github/badges/alunos.svg)
+![Exercícios](https://raw.githubusercontent.com/petrosbarreto/desenvolvimento-web-2026-exercicios/main/.github/badges/exercicios.svg)
+![Média](https://raw.githubusercontent.com/petrosbarreto/desenvolvimento-web-2026-exercicios/main/.github/badges/media.svg)
+
+**[📖 Ver Guia de Setup →](SETUP.md)**
