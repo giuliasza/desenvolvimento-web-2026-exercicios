@@ -1,143 +1,29 @@
-name: Detector de Plágio
+name: Simples CI - Verificação
 
 on:
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  check-plagiarism:
+  simple-check:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout PR
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
-      - name: Instalar dependências
-        run: pip install difflib
-      
-      - name: Detectar similaridade entre códigos
-        id: plagiarism-check
+
+      - name: Detectar código duplicado simples
         run: |
-          python3 << 'PYTHON_SCRIPT'
-          import os
-          import difflib
-          import re
-          from pathlib import Path
-          
-          def normalize_code(code):
-              """Remove espaços, comentários e normaliza código"""
-              # Remove comentários HTML
-              code = re.sub(r'<!--.*?-->', '', code, flags=re.DOTALL)
-              # Remove comentários JS
-              code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
-              code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
-              # Remove espaços extras
-              code = re.sub(r'\s+', ' ', code)
-              # Lowercase
-              code = code.lower()
-              return code.strip()
-          
-          def calculate_similarity(code1, code2):
-              """Calcula similaridade entre dois códigos"""
-              norm1 = normalize_code(code1)
-              norm2 = normalize_code(code2)
-              
-              if not norm1 or not norm2:
-                  return 0
-              
-              matcher = difflib.SequenceMatcher(None, norm1, norm2)
-              return matcher.ratio() * 100
-          
-          # Buscar todos arquivos de exercícios submetidos
-          exercicios_dir = Path('exercicios')
-          submissions = {}
-          
-          for aula_dir in exercicios_dir.glob('aula*/'):
-              aula_num = aula_dir.name
-              for file_type in ['index.html', 'script.js', 'style.css']:
-                  file_path = aula_dir / file_type
-                  if file_path.exists():
-                      key = f"{aula_num}/{file_type}"
-                      with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                          submissions[key] = f.read()
-          
-          # Comparar com submissões anteriores (simulado - em produção, buscar de PRs anteriores)
-          suspicious = []
-          THRESHOLD = 85  # 85% de similaridade = suspeito
-          
-          # Aqui você implementaria comparação com PRs anteriores
-          # Por ora, apenas detecta se código ainda está muito parecido com template
-          
-          for key, code in submissions.items():
-              # Verifica se ainda tem muitos TODOs
-              todo_count = code.count('TODO')
-              comment_count = code.count('Implemente')
-              
-              if todo_count > 5 or comment_count > 5:
-                  suspicious.append({
-                      'file': key,
-                      'reason': f'Código não implementado ({todo_count} TODOs, {comment_count} comentários)'
-                  })
-          
-          if suspicious:
-              print("⚠️ ATENÇÃO: Código suspeito detectado")
-              for item in suspicious:
-                  print(f"  - {item['file']}: {item['reason']}")
-              
-              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                  f.write(f"suspicious=true\n")
-                  f.write(f"count={len(suspicious)}\n")
-          else:
-              print("✅ Nenhuma suspeita de plágio")
-              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                  f.write(f"suspicious=false\n")
-          PYTHON_SCRIPT
-      
-      - name: Comentar suspeita de plágio
-        if: steps.plagiarism-check.outputs.suspicious == 'true'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const body = `## ⚠️ Alerta de Similaridade de Código
-            
-            Nosso sistema detectou que parte do seu código ainda está muito similar ao template fornecido.
-            
-            ### 🔍 O que verificamos:
-            - Quantidade de TODOs não removidos
-            - Código ainda comentado
-            - Similaridade com template original
-            
-            ### ✅ O que fazer:
-            1. Implemente o código completamente
-            2. Remova os comentários TODO
-            3. Personalize sua solução
-            4. Não copie código de colegas
-            
-            ### ⚠️ Lembre-se:
-            - Copiar código é **violação acadêmica**
-            - Você pode pesquisar e aprender, mas deve escrever seu próprio código
-            - Dúvidas? Abra uma Issue ou pergunte ao professor
-            
-            _Este é um alerta automático. Se você acredita que é um falso positivo, entre em contato com o professor._`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-            
-            // Adicionar label de atenção
-            github.rest.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['⚠️ revisar-manualmente']
-            });
+          echo "Iniciando verificação simplificada..."
+          if grep -r 'TODO' ./exercicios; then
+            echo "⚠️ Código contém 'TODO'. Por favor, complete o código antes de submeter."
+            exit 1
+          else
+            echo "✅ Nenhum 'TODO' encontrado no código enviado."
+          fi
